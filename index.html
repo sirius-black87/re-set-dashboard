@@ -3,22 +3,93 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>מערכת לניהול פרויקטים</title>
+  <title>Re-Set · דשבורד ניהול פרויקטים</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="reset-dashboard/styles.css"/>
+  <style>
+    #auth-gate {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #0f1923 0%, #1a2e3b 100%);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Heebo', sans-serif;
+    }
+    #auth-gate.visible { display: flex; }
+    .auth-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.35);
+      text-align: center;
+    }
+    .auth-logo {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #4a6fa5, #8870a8);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      margin: 0 auto 20px;
+    }
+    .auth-title { font-size: 24px; font-weight: 700; color: #1a202c; margin: 0 0 4px; }
+    .auth-subtitle { font-size: 14px; color: #718096; margin: 0 0 32px; }
+    .auth-tabs { display: flex; gap: 0; background: #f7f8fa; border-radius: 10px; padding: 4px; margin-bottom: 24px; }
+    .auth-tab {
+      flex: 1; padding: 8px; font-size: 14px; font-weight: 600; border: none;
+      background: transparent; border-radius: 8px; cursor: pointer; color: #718096;
+      font-family: 'Heebo', sans-serif; transition: all .2s;
+    }
+    .auth-tab.active { background: #fff; color: #1a202c; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    .auth-input {
+      width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 10px;
+      font-size: 15px; font-family: 'Heebo', sans-serif; box-sizing: border-box;
+      margin-bottom: 12px; transition: border-color .2s; outline: none; direction: ltr; text-align: left;
+    }
+    .auth-input:focus { border-color: #4a6fa5; }
+    .auth-btn {
+      width: 100%; padding: 13px; background: linear-gradient(135deg, #4a6fa5, #8870a8);
+      color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+      font-family: 'Heebo', sans-serif; cursor: pointer; margin-top: 4px; transition: opacity .2s;
+    }
+    .auth-btn:hover { opacity: .9; }
+    .auth-btn:disabled { opacity: .5; cursor: default; }
+    .auth-error { background: #fff5f5; color: #c53030; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-top: 12px; text-align: right; }
+    .auth-loading { color: #718096; font-size: 14px; margin-top: 16px; }
+  </style>
 </head>
 <body>
+
+  <!-- מסך כניסה / הרשמה -->
+  <div id="auth-gate" class="visible">
+    <div class="auth-card">
+      <div class="auth-logo">R</div>
+      <h1 class="auth-title">Re-Set Dashboard</h1>
+      <p class="auth-subtitle">דשבורד ניהול פרויקטים</p>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">כניסה</button>
+        <button class="auth-tab" id="tab-register" onclick="switchTab('register')">הרשמה</button>
+      </div>
+      <input class="auth-input" id="auth-email" type="email" placeholder="כתובת מייל" autocomplete="email"/>
+      <input class="auth-input" id="auth-password" type="password" placeholder="סיסמה" autocomplete="current-password"/>
+      <div id="auth-error" class="auth-error" style="display:none"></div>
+      <button class="auth-btn" id="auth-submit" onclick="handleAuth()">כניסה</button>
+    </div>
+  </div>
+
   <template id="__bundler_thumbnail" data-bg-color="#0a5e3e">
     <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
       <rect x="120" y="140" width="960" height="520" rx="24" fill="#ffffff" opacity="0.08"/>
-      <rect x="180" y="200" width="380" height="44" rx="10" fill="#ffffff" opacity="0.75"/>
-      <rect x="180" y="270" width="240" height="22" rx="6" fill="#ffffff" opacity="0.45"/>
-      <rect x="180" y="340" width="260" height="160" rx="14" fill="#ffffff" opacity="0.55"/>
-      <rect x="470" y="340" width="260" height="160" rx="14" fill="#ffffff" opacity="0.35"/>
-      <rect x="760" y="340" width="260" height="160" rx="14" fill="#ffffff" opacity="0.25"/>
-      <rect x="180" y="540" width="840" height="60" rx="12" fill="#ffffff" opacity="0.3"/>
     </svg>
   </template>
   <div id="root"></div>
@@ -27,10 +98,84 @@
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
-  <!-- Firebase (compat SDK so it works via plain <script> tags) -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+
+  <script>
+    // הגדרות Firebase — מוטמעות אוטומטית
+    const _fbConfig = {
+      apiKey: "AIzaSyCUZjyUQho5kVcBA5dv_V8jlbOXU1mhhCw",
+      authDomain: "reset-dashboard-prod.firebaseapp.com",
+      projectId: "reset-dashboard-prod",
+      storageBucket: "reset-dashboard-prod.firebasestorage.app",
+      messagingSenderId: "371576582162",
+      appId: "1:371576582162:web:81a80055e925b78e19a8cb"
+    };
+    firebase.initializeApp(_fbConfig);
+    localStorage.setItem('reset-firebase-config', JSON.stringify(_fbConfig));
+
+    var _authMode = 'login';
+
+    function switchTab(mode) {
+      _authMode = mode;
+      document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+      document.getElementById('tab-register').classList.toggle('active', mode === 'register');
+      document.getElementById('auth-submit').textContent = mode === 'login' ? 'כניסה' : 'הרשמה';
+      document.getElementById('auth-error').style.display = 'none';
+    }
+
+    function showError(msg) {
+      var el = document.getElementById('auth-error');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function handleAuth() {
+      var email = document.getElementById('auth-email').value.trim();
+      var password = document.getElementById('auth-password').value;
+      var btn = document.getElementById('auth-submit');
+      if (!email || !password) { showError('נא למלא מייל וסיסמה'); return; }
+      if (password.length < 6) { showError('הסיסמה חייבת להכיל לפחות 6 תווים'); return; }
+      btn.disabled = true;
+      btn.textContent = 'מתחבר...';
+      var auth = firebase.auth();
+      var action = _authMode === 'login'
+        ? auth.signInWithEmailAndPassword(email, password)
+        : auth.createUserWithEmailAndPassword(email, password);
+      action.catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = _authMode === 'login' ? 'כניסה' : 'הרשמה';
+        var msgs = {
+          'auth/user-not-found': 'משתמש לא נמצא — אולי עדיין לא נרשמת?',
+          'auth/wrong-password': 'סיסמה שגויה',
+          'auth/email-already-in-use': 'המייל כבר רשום — נסה/י להתחבר',
+          'auth/invalid-email': 'כתובת מייל לא תקינה',
+          'auth/weak-password': 'הסיסמה חלשה מדי (מינימום 6 תווים)',
+          'auth/invalid-credential': 'מייל או סיסמה שגויים',
+        };
+        showError(msgs[err.code] || err.message);
+      });
+    }
+
+    // האזן לשינוי מצב כניסה
+    firebase.auth().onAuthStateChanged(function(user) {
+      var gate = document.getElementById('auth-gate');
+      if (user) {
+        gate.classList.remove('visible');
+      } else {
+        gate.classList.add('visible');
+      }
+    });
+
+    // כניסה עם Enter
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && document.getElementById('auth-gate').classList.contains('visible')) {
+        handleAuth();
+      }
+    });
+  </script>
 
   <script src="reset-dashboard/data.js"></script>
   <script src="reset-dashboard/projects.js"></script>
