@@ -3183,8 +3183,17 @@ html[data-edit-mode="on"][data-theme="dark"] .editable {
   gap: 6px !important;
   align-items: center;
   flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 .note-actions .note-btn {
+  width: 30px !important;
+  height: 30px !important;
+}
+.note-actions .note-btn.del {
+  position: static !important;
+  top: auto !important;
+  inset-inline-end: auto !important;
+  opacity: 1 !important;
   width: 30px !important;
   height: 30px !important;
 }
