@@ -709,30 +709,34 @@ const NewTaskRow = ({ phaseId, onCancel, onSave }) => {
   const [t, setT] = React.useState('');
   const [p, setP] = React.useState('should');
   const [d, setD] = React.useState('1 שבוע');
+  const save = () => { if (t.trim()) onSave({t: t.trim(), p, d, s: 'todo'}); };
   return (
     <div className="tp-new-task">
       <input
         autoFocus
-        className="filter-search"
+        className="filter-search tp-new-input-main"
         placeholder="שם משימה חדשה..."
         value={t}
         onChange={e => setT(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter' && t.trim()) onSave({t: t.trim(), p, d, s: 'todo'}); if (e.key === 'Escape') onCancel(); }}
-        style={{flex: 1, minWidth: 200}}
+        onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') onCancel(); }}
       />
-      <select className="tp-select" value={p} onChange={e => setP(e.target.value)}>
-        <option value="must">חובה</option>
-        <option value="should">חשוב</option>
-      </select>
-      <input
-        className="filter-search"
-        placeholder="משך"
-        value={d}
-        onChange={e => setD(e.target.value)}
-        style={{width: 100}}
-      />
-      <button className="btn primary" onClick={() => t.trim() && onSave({t: t.trim(), p, d, s: 'todo'})}>שמור</button>
-      <button className="btn" onClick={onCancel}>ביטול</button>
+      <div className="tp-new-row2">
+        <select className="tp-select" value={p} onChange={e => setP(e.target.value)}>
+          <option value="must">חובה</option>
+          <option value="should">חשוב</option>
+        </select>
+        <input
+          className="filter-search"
+          placeholder="משך"
+          value={d}
+          onChange={e => setD(e.target.value)}
+          style={{flex: 1}}
+        />
+      </div>
+      <div className="tp-new-row3">
+        <button className="btn primary" style={{flex:1}} onClick={save}>שמור</button>
+        <button className="btn" style={{flex:1}} onClick={onCancel}>ביטול</button>
+      </div>
     </div>
   );
 };
