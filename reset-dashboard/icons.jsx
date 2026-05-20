@@ -9,6 +9,7 @@ const Icon = ({ name, size = 16, ...props }) => {
     ...props
   };
   switch (name) {
+    case 'menu': return <svg {...common}><line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/></svg>;
     case 'home': return <svg {...common}><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>;
     case 'gantt': return <svg {...common}><rect x="3" y="5" width="10" height="3" rx="1"/><rect x="7" y="11" width="10" height="3" rx="1"/><rect x="11" y="17" width="10" height="3" rx="1"/></svg>;
     case 'list': return <svg {...common}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>;

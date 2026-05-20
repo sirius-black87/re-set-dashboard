@@ -22,7 +22,11 @@ const App = () => {
   const [tweaks, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
   const [teamOpen, setTeamOpen] = useState(false);
   const [showNewMember, setShowNewMember] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const store = window.useTaskStore();
+
+  const closeSidebar = () => setSidebarOpen(false);
+  const navTo = (k) => { setView(k); closeSidebar(); };
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', tweaks.theme);
@@ -72,7 +76,8 @@ const App = () => {
   const Editable = window.Editable;
 
   return (
-    <div className="app">
+    <div className={"app" + (sidebarOpen ? ' sidebar-open' : '')}>
+      {sidebarOpen && <div className="sidebar-overlay" onClick={closeSidebar}/>}
       <aside className="sidebar">
         {/* Project switcher at top */}
         <window.ProjectSwitcher goToHub={() => setShowProjectsHub(true)}/>
@@ -113,7 +118,7 @@ const App = () => {
             <button
               key={n.k}
               className={"nav-item " + (view === n.k ? 'active' : '')}
-              onClick={() => setView(n.k)}
+              onClick={() => navTo(n.k)}
             >
               <Icon name={n.icon} size={17} className="icon" />
               <span>{n.label}</span>
@@ -155,6 +160,9 @@ const App = () => {
 
       <main className="main">
         <div className="page-head">
+          <button className="hamburger-btn" onClick={() => setSidebarOpen(o => !o)} title="תפריט">
+            <Icon name="menu" size={20}/>
+          </button>
           <div className="page-head-brand">
             <div className="brand-mark sm">{(D3.PROJECT.name || '?').trim().charAt(0) || 'P'}</div>
             <div className="page-head-brand-text">
