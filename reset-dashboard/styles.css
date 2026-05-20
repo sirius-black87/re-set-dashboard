@@ -1187,9 +1187,7 @@ button { cursor: pointer; }
   color: var(--primary-2);
 }
 .note-item .del {
-  position: absolute;
-  top: 6px;
-  inset-inline-end: 6px;
+  position: static;
   width: 22px; height: 22px;
   display: grid; place-items: center;
   border-radius: 4px;
@@ -1197,11 +1195,9 @@ button { cursor: pointer; }
   border: none;
   color: var(--ink-4);
   cursor: pointer;
-  opacity: 0;
   font-size: 14px;
   line-height: 1;
 }
-.note-item:hover .del { opacity: 1; }
 .note-item .del:hover { background: var(--surface-3); color: var(--risk-high); }
 
 .notes-empty {
