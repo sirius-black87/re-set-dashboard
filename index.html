@@ -31,6 +31,18 @@
     messagingSenderId:"371576582162",
     appId:"1:371576582162:web:81a80055e925b78e19a8cb"
   };
+  /* Patch initializeApp: cloud-sync.js calls it too — without this it throws
+     "app/duplicate-app", sets auth=null, and user tracking + login break */
+  (function(){
+    var _orig = firebase.initializeApp;
+    firebase.initializeApp = function(cfg, name) {
+      try { return _orig.apply(firebase, arguments); }
+      catch(e) {
+        if (e.code === 'app/duplicate-app') return firebase.app(name || '[DEFAULT]');
+        throw e;
+      }
+    };
+  })();
   if (!firebase.apps.length) firebase.initializeApp(_fbCfg);
   try { localStorage.setItem('reset-firebase-config', JSON.stringify(_fbCfg)); } catch(e){}
 
