@@ -19,6 +19,22 @@
   </noscript>
 </head>
 <body>
+
+  <script>
+    // Suppress the "cloud data loaded" confirm dialog — reload silently once per session
+    var _origConfirm = window.confirm;
+    window.confirm = function(msg) {
+      if (msg && (msg.includes('נטענו נתוני ענן') || msg.includes('ענן עדכניים'))) {
+        if (!sessionStorage.getItem('_cloud_synced')) {
+          sessionStorage.setItem('_cloud_synced', '1');
+          setTimeout(function() { location.reload(); }, 300);
+        }
+        return false;
+      }
+      return _origConfirm.call(window, msg);
+    };
+  </script>
+
   <div id="__bundler_thumbnail">
     <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
       <rect x="120" y="140" width="960" height="520" rx="24" fill="#ffffff" opacity="0.08"></rect>
