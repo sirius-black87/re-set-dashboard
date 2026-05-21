@@ -34,42 +34,25 @@
   if (!firebase.apps.length) firebase.initializeApp(_fbCfg);
   try { localStorage.setItem('reset-firebase-config', JSON.stringify(_fbCfg)); } catch(e){}
 
-  /* ─── Block ALL confirm dialogs from cloud-sync ─── */
+  /* ─── Silence cloud-sync confirm popup ─── */
+  /* loadFromCloud() saves cloud data to localStorage BEFORE calling confirm().
+     confirm() just asks "reload to display?". We return true once per session
+     so the app reloads and shows the fresh data. sessionStorage prevents the
+     reload loop (persists across location.reload in same tab). */
   (function(){
     var _oc = window.confirm;
     window.confirm = function(msg) {
       if (msg && (msg.indexOf('ענן') !== -1 || msg.indexOf('cloud') !== -1 ||
                   msg.indexOf('רענן') !== -1 || msg.indexOf('נתוני') !== -1)) {
-        /* Silently reload once, then never again */
-        var key = '_cs_done';
-        if (!localStorage.getItem(key)) {
-          localStorage.setItem(key, '1');
-          setTimeout(function(){ location.reload(); }, 600);
+        if (!sessionStorage.getItem('_cs_done')) {
+          sessionStorage.setItem('_cs_done', '1');
+          return true;  /* accept + reload once per session */
         }
-        return false;
+        return false;   /* already reloaded — prevent loop */
       }
       return _oc ? _oc.apply(window, arguments) : true;
     };
   })();
-
-  /* ─── Patch __cloudSync.loadFromCloud after app loads ─── */
-  function _patchSync() {
-    var cs = window.__cloudSync;
-    if (!cs) return false;
-    if (cs._patched) return true;
-    cs._patched = true;
-    /* Replace loadFromCloud with a silent version */
-    cs.loadFromCloud = async function() {
-      if (!cs.user) return;
-      try {
-        cs.saveToCloud && cs.saveToCloud();
-      } catch(e) {}
-    };
-    return true;
-  }
-  var _patchInterval = setInterval(function(){
-    if (_patchSync()) clearInterval(_patchInterval);
-  }, 300);
 
   /* ─── CSS ─── */
   var _AUTH_CSS = '#auth-gate{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0f1923,#1a2e3b);z-index:99999;align-items:center;justify-content:center;font-family:Heebo,-apple-system,sans-serif}#auth-gate.v{display:flex}.ac{background:#fff;border-radius:20px;padding:44px 36px;width:calc(100% - 32px);max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.35);text-align:center;direction:rtl}.alo{width:60px;height:60px;background:linear-gradient(135deg,#4a6fa5,#8870a8);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;margin:0 auto 18px}.ati{font-size:22px;font-weight:700;color:#1a202c;margin:0 0 4px}.asu{font-size:13px;color:#718096;margin:0 0 28px}.atabs{display:flex;background:#f7f8fa;border-radius:10px;padding:4px;margin-bottom:20px}.atab{flex:1;padding:8px;font-size:14px;font-weight:600;border:none;background:transparent;border-radius:8px;cursor:pointer;color:#718096;font-family:inherit;transition:all .2s}.atab.on{background:#fff;color:#1a202c;box-shadow:0 1px 4px rgba(0,0,0,.1)}.ain{width:100%;padding:11px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:15px;font-family:inherit;box-sizing:border-box;margin-bottom:10px;outline:none;direction:ltr;text-align:left;transition:border-color .2s}.ain:focus{border-color:#4a6fa5}.abtn{width:100%;padding:12px;background:linear-gradient(135deg,#4a6fa5,#8870a8);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px}.abtn:disabled{opacity:.5}.aerr{background:#fff5f5;color:#c53030;border-radius:8px;padding:9px 12px;font-size:13px;margin-top:10px;text-align:right}';
@@ -124,7 +107,7 @@
     var d=document.createElement('div');
     d.id='_gate'; d.className='v';
     d.style.cssText='display:flex;position:fixed;inset:0;background:linear-gradient(135deg,#0f1923,#1a2e3b);z-index:99999;align-items:center;justify-content:center;font-family:Heebo,-apple-system,sans-serif';
-    d.innerHTML='<div class="ac"><div class="alo">R</div><h1 class="ati">Re-Set Dashboard</h1><p class="asu">דשבורד ניהול פרויקטים</p><div class="atabs"><button id="_tl" class="atab on" onclick="_switchTab('login')">כניסה</button><button id="_tr" class="atab" onclick="_switchTab('register')">הרשמה</button></div><input class="ain" id="_em" type="email" placeholder="כתובת מייל" autocomplete="email"/><input class="ain" id="_pw" type="password" placeholder="סיסמה" autocomplete="current-password"/><div id="_er" class="aerr" style="display:none"></div><button class="abtn" id="_sb" onclick="_doAuth()">כניסה</button></div>';
+    d.innerHTML=`<div class="ac"><div class="alo">R</div><h1 class="ati">Re-Set Dashboard</h1><p class="asu">דשבורד ניהול פרויקטים</p><div class="atabs"><button id="_tl" class="atab on" onclick="_switchTab('login')">כניסה</button><button id="_tr" class="atab" onclick="_switchTab('register')">הרשמה</button></div><input class="ain" id="_em" type="email" placeholder="כתובת מייל" autocomplete="email"/><input class="ain" id="_pw" type="password" placeholder="סיסמה" autocomplete="current-password"/><div id="_er" class="aerr" style="display:none"></div><button class="abtn" id="_sb" onclick="_doAuth()">כניסה</button></div>`;
     document.body.appendChild(d);
     document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.getElementById('_gate'))_doAuth();});
   }
