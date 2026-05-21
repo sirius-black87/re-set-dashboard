@@ -18,217 +18,153 @@
     </div>
   </noscript>
 
-  <!-- Firebase SDKs — load before bundler -->
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-
   <script>
-  // ── Firebase init ──
-  var _fbConfig = {
-    apiKey: "AIzaSyCUZjyUQho5kVcBA5dv_V8jlbOXU1mhhCw",
-    authDomain: "reset-dashboard-prod.firebaseapp.com",
-    projectId: "reset-dashboard-prod",
-    storageBucket: "reset-dashboard-prod.firebasestorage.app",
-    messagingSenderId: "371576582162",
-    appId: "1:371576582162:web:81a80055e925b78e19a8cb"
+  /* ─── Firebase init ─── */
+  var _fbCfg = {
+    apiKey:"AIzaSyCUZjyUQho5kVcBA5dv_V8jlbOXU1mhhCw",
+    authDomain:"reset-dashboard-prod.firebaseapp.com",
+    projectId:"reset-dashboard-prod",
+    storageBucket:"reset-dashboard-prod.firebasestorage.app",
+    messagingSenderId:"371576582162",
+    appId:"1:371576582162:web:81a80055e925b78e19a8cb"
   };
-  if (!firebase.apps.length) firebase.initializeApp(_fbConfig);
-  try { localStorage.setItem('reset-firebase-config', JSON.stringify(_fbConfig)); } catch(e){}
+  if (!firebase.apps.length) firebase.initializeApp(_fbCfg);
+  try { localStorage.setItem('reset-firebase-config', JSON.stringify(_fbCfg)); } catch(e){}
 
-  // ── Suppress cloud sync confirm popup ──
-  var _origConfirm = window.confirm;
-  window.confirm = function(msg) {
-    if (msg && msg.includes('ענן')) {
-      if (!sessionStorage.getItem('_synced')) {
-        sessionStorage.setItem('_synced','1');
-        setTimeout(function(){ location.reload(); }, 400);
+  /* ─── Block ALL confirm dialogs from cloud-sync ─── */
+  (function(){
+    var _oc = window.confirm;
+    window.confirm = function(msg) {
+      if (msg && (msg.indexOf('ענן') !== -1 || msg.indexOf('cloud') !== -1 ||
+                  msg.indexOf('רענן') !== -1 || msg.indexOf('נתוני') !== -1)) {
+        /* Silently reload once, then never again */
+        var key = '_cs_done';
+        if (!localStorage.getItem(key)) {
+          localStorage.setItem(key, '1');
+          setTimeout(function(){ location.reload(); }, 600);
+        }
+        return false;
       }
-      return false;
-    }
-    return _origConfirm.call(window, msg);
-  };
+      return _oc ? _oc.apply(window, arguments) : true;
+    };
+  })();
 
-  var _authMode = 'login';
+  /* ─── Patch __cloudSync.loadFromCloud after app loads ─── */
+  function _patchSync() {
+    var cs = window.__cloudSync;
+    if (!cs) return false;
+    if (cs._patched) return true;
+    cs._patched = true;
+    /* Replace loadFromCloud with a silent version */
+    cs.loadFromCloud = async function() {
+      if (!cs.user) return;
+      try {
+        cs.saveToCloud && cs.saveToCloud();
+      } catch(e) {}
+    };
+    return true;
+  }
+  var _patchInterval = setInterval(function(){
+    if (_patchSync()) clearInterval(_patchInterval);
+  }, 300);
 
-  var AUTH_CSS = [
-    '#auth-gate{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0f1923,#1a2e3b);z-index:99999;align-items:center;justify-content:center;font-family:Heebo,-apple-system,sans-serif}',
-    '#auth-gate.visible{display:flex}',
-    '.auth-card{background:#fff;border-radius:20px;padding:44px 36px;width:100%;max-width:400px;margin:16px;box-shadow:0 24px 64px rgba(0,0,0,.35);text-align:center;direction:rtl}',
-    '.auth-logo{width:60px;height:60px;background:linear-gradient(135deg,#4a6fa5,#8870a8);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;margin:0 auto 18px}',
-    '.auth-title{font-size:22px;font-weight:700;color:#1a202c;margin:0 0 4px}',
-    '.auth-subtitle{font-size:13px;color:#718096;margin:0 0 28px}',
-    '.auth-tabs{display:flex;background:#f7f8fa;border-radius:10px;padding:4px;margin-bottom:20px}',
-    '.auth-tab{flex:1;padding:8px;font-size:14px;font-weight:600;border:none;background:transparent;border-radius:8px;cursor:pointer;color:#718096;font-family:inherit;transition:all .2s}',
-    '.auth-tab.active{background:#fff;color:#1a202c;box-shadow:0 1px 4px rgba(0,0,0,.1)}',
-    '.auth-input{width:100%;padding:11px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:15px;font-family:inherit;box-sizing:border-box;margin-bottom:10px;outline:none;direction:ltr;text-align:left;transition:border-color .2s}',
-    '.auth-input:focus{border-color:#4a6fa5}',
-    '.auth-btn{width:100%;padding:12px;background:linear-gradient(135deg,#4a6fa5,#8870a8);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px;transition:opacity .2s}',
-    '.auth-btn:hover{opacity:.9}.auth-btn:disabled{opacity:.5;cursor:default}',
-    '.auth-error{background:#fff5f5;color:#c53030;border-radius:8px;padding:9px 12px;font-size:13px;margin-top:10px;text-align:right}'
-  ].join('');
+  /* ─── CSS ─── */
+  var _AUTH_CSS = '#auth-gate{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0f1923,#1a2e3b);z-index:99999;align-items:center;justify-content:center;font-family:Heebo,-apple-system,sans-serif}#auth-gate.v{display:flex}.ac{background:#fff;border-radius:20px;padding:44px 36px;width:calc(100% - 32px);max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.35);text-align:center;direction:rtl}.alo{width:60px;height:60px;background:linear-gradient(135deg,#4a6fa5,#8870a8);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;margin:0 auto 18px}.ati{font-size:22px;font-weight:700;color:#1a202c;margin:0 0 4px}.asu{font-size:13px;color:#718096;margin:0 0 28px}.atabs{display:flex;background:#f7f8fa;border-radius:10px;padding:4px;margin-bottom:20px}.atab{flex:1;padding:8px;font-size:14px;font-weight:600;border:none;background:transparent;border-radius:8px;cursor:pointer;color:#718096;font-family:inherit;transition:all .2s}.atab.on{background:#fff;color:#1a202c;box-shadow:0 1px 4px rgba(0,0,0,.1)}.ain{width:100%;padding:11px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:15px;font-family:inherit;box-sizing:border-box;margin-bottom:10px;outline:none;direction:ltr;text-align:left;transition:border-color .2s}.ain:focus{border-color:#4a6fa5}.abtn{width:100%;padding:12px;background:linear-gradient(135deg,#4a6fa5,#8870a8);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px}.abtn:disabled{opacity:.5}.aerr{background:#fff5f5;color:#c53030;border-radius:8px;padding:9px 12px;font-size:13px;margin-top:10px;text-align:right}';
 
-  var MOBILE_CSS = [
-    '@media(max-width:768px){',
-    '.app{grid-template-columns:1fr!important}',
-    '.sidebar{position:fixed!important;top:0;right:0;height:100vh!important;width:260px;z-index:200;transform:translateX(100%);transition:transform .28s ease;overflow-y:auto}',
-    '.app.sb-open .sidebar{transform:translateX(0);box-shadow:-6px 0 32px rgba(0,0,0,.18)}',
-    '.hbg-btn{display:flex!important}',
-    '.page-head{display:flex;align-items:center}',
-    '.page-head-divider,.page-head-crumb{display:none}',
-    '.main{grid-column:1!important;overflow-x:hidden}',
-    '.topbar{padding:10px 14px}.topbar h1{font-size:18px}.topbar p{font-size:12px}',
-    '.page-body{padding:10px 10px 60px}',
-    '.kpi-grid{grid-template-columns:repeat(2,1fr)!important;gap:8px}',
-    '.row,.row.even,.row.three{grid-template-columns:1fr!important}',
-    '.modules-grid{grid-template-columns:1fr!important}',
-    '.gantt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}',
-    '.tweaks-panel{width:92vw!important;max-width:360px}',
-    '.tp-head{grid-template-columns:22px 1fr auto!important;gap:8px!important;padding:10px 12px!important}',
-    '.tp-num,.tp-count,.tp-progress,.tp-del{display:none!important}',
-    '.tp-add-btn{font-size:12px!important;padding:4px 8px!important;white-space:nowrap}',
-    '.tp-table .task-th{display:none!important}',
-    '.tp-table .task-tr{grid-template-columns:32px 1fr auto!important;padding:10px 12px!important;gap:8px!important;align-items:center}',
-    '.tp-table .task-tr>div:nth-child(3),.tp-table .task-tr>div:nth-child(4),.tp-table .task-tr>div:nth-child(5){display:none!important}',
-    '.tp-table .task-tr .text{font-size:14px;white-space:normal;word-break:break-word}',
-    '.tp-table .task-tr>div:last-child{display:flex!important;align-items:center;gap:4px;flex-shrink:0}',
-    '.tp-tr .row-toggle{position:static!important;transform:none!important;opacity:1!important;width:28px!important;height:28px!important}',
-    '.task-tr .delete-btn,.tp-tr .delete-btn{opacity:1!important;position:static!important}',
-    '.tp-new-task{flex-direction:column!important;gap:8px!important;padding:12px!important}',
-    '.tp-new-task input,.tp-new-task select{width:100%!important;min-width:unset!important;box-sizing:border-box}',
-    '.note-item{padding:8px 10px!important;gap:8px!important}',
-    '.note-actions{opacity:1!important}',
-    '.note-actions .note-btn{width:28px!important;height:28px!important}',
-    '.note-compose{padding:10px 12px!important}',
-    '.note-compose textarea{font-size:14px!important;min-height:70px!important}',
-    '.note-compose-row{flex-wrap:wrap!important;gap:8px!important}',
-    '.note-kind-picker{display:flex!important;flex-wrap:wrap!important;gap:6px!important;width:100%}',
-    '.kind-opt{flex:1!important;min-width:80px!important;text-align:center!important;font-size:12px!important}',
-    '.note-compose-row .spacer{display:none!important}',
-    '.note-compose-row .btn{width:100%!important;padding:9px!important}',
-    '.drag-handle{display:none!important}',
-    '}'
-  ].join('');
+  var _MOB_CSS = '@media(max-width:768px){.app{grid-template-columns:1fr!important}.sidebar{position:fixed!important;top:0;right:0;height:100vh!important;width:260px;z-index:200;transform:translateX(100%);transition:transform .28s ease;overflow-y:auto}.app.sbo .sidebar{transform:translateX(0);box-shadow:-6px 0 32px rgba(0,0,0,.18)}.hbtn{display:flex!important}.page-head{display:flex;align-items:center}.page-head-divider,.page-head-crumb{display:none}.main{grid-column:1!important;overflow-x:hidden}.topbar{padding:10px 14px}.topbar h1{font-size:18px}.topbar p{font-size:12px}.page-body{padding:10px 10px 60px}.kpi-grid{grid-template-columns:repeat(2,1fr)!important;gap:8px}.row,.row.even,.row.three{grid-template-columns:1fr!important}.modules-grid{grid-template-columns:1fr!important}.gantt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.tweaks-panel{width:92vw!important;max-width:360px}.tp-head{grid-template-columns:22px 1fr auto!important;gap:8px!important;padding:10px 12px!important}.tp-num,.tp-count,.tp-progress,.tp-del{display:none!important}.tp-add-btn{font-size:12px!important;padding:4px 8px!important;white-space:nowrap}.tp-table .task-th{display:none!important}.tp-table .task-tr{grid-template-columns:32px 1fr auto!important;padding:10px 12px!important;gap:8px!important;align-items:center}.tp-table .task-tr>div:nth-child(3),.tp-table .task-tr>div:nth-child(4),.tp-table .task-tr>div:nth-child(5){display:none!important}.tp-table .task-tr .text{font-size:14px;white-space:normal;word-break:break-word}.tp-table .task-tr>div:last-child{display:flex!important;align-items:center;gap:4px;flex-shrink:0}.tp-tr .row-toggle{position:static!important;transform:none!important;opacity:1!important;width:28px!important;height:28px!important}.task-tr .delete-btn,.tp-tr .delete-btn{opacity:1!important;position:static!important}.tp-new-task{flex-direction:column!important;gap:8px!important;padding:12px!important}.tp-new-task input,.tp-new-task select{width:100%!important;min-width:unset!important;box-sizing:border-box}.note-item{padding:8px 10px!important;gap:8px!important}.note-actions{opacity:1!important}.note-actions .note-btn{width:28px!important;height:28px!important}.note-compose{padding:10px 12px!important}.note-compose textarea{font-size:14px!important;min-height:70px!important}.note-compose-row{flex-wrap:wrap!important;gap:8px!important}.note-kind-picker{display:flex!important;flex-wrap:wrap!important;gap:6px!important;width:100%}.kind-opt{flex:1!important;min-width:80px!important;text-align:center!important;font-size:12px!important}.note-compose-row .spacer{display:none!important}.note-compose-row .btn{width:100%!important;padding:9px!important}.drag-handle{display:none!important}}.hbtn{display:none;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--line,#e2e8f0);border-radius:8px;background:transparent;color:#64748b;cursor:pointer;flex-shrink:0;margin-left:8px}.hbtn:hover{background:#f1f5f9}.sbo-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:199}';
 
-  var HBG_CSS = [
-    '.hbg-btn{display:none;align-items:center;justify-content:center;width:34px;height:34px;',
-    'border:1px solid var(--line,#e2e8f0);border-radius:8px;background:transparent;',
-    'color:#64748b;cursor:pointer;flex-shrink:0;margin-left:8px}',
-    '.hbg-btn:hover{background:#f1f5f9}',
-    '.sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:199}'
-  ].join('');
-
-  function injectCSS(id, css) {
+  function _injectStyle(id, css) {
     if (document.getElementById(id)) return;
     var s = document.createElement('style');
     s.id = id; s.textContent = css;
     (document.head || document.documentElement).appendChild(s);
   }
 
-  function injectAuthGate() {
-    if (document.getElementById('auth-gate')) return;
-    injectCSS('_auth-css', AUTH_CSS);
-    var gate = document.createElement('div');
-    gate.id = 'auth-gate';
-    gate.className = 'visible';
-    gate.innerHTML = [
-      '<div class="auth-card">',
-      '<div class="auth-logo">R</div>',
-      '<h1 class="auth-title">Re-Set Dashboard</h1>',
-      '<p class="auth-subtitle">דשבורד ניהול פרויקטים</p>',
-      '<div class="auth-tabs">',
-      '<button class="auth-tab active" id="tab-login" onclick="switchTab('login')">כניסה</button>',
-      '<button class="auth-tab" id="tab-register" onclick="switchTab('register')">הרשמה</button>',
-      '</div>',
-      '<input class="auth-input" id="auth-email" type="email" placeholder="כתובת מייל" autocomplete="email"/>',
-      '<input class="auth-input" id="auth-password" type="password" placeholder="סיסמה" autocomplete="current-password"/>',
-      '<div id="auth-error" class="auth-error" style="display:none"></div>',
-      '<button class="auth-btn" id="auth-submit" onclick="handleAuth()">כניסה</button>',
-      '</div>'
-    ].join('');
-    document.body.appendChild(gate);
-    document.addEventListener('keydown', function(e){
-      if(e.key==='Enter'){var g=document.getElementById('auth-gate');if(g&&g.classList.contains('visible'))handleAuth();}
+  var _am = 'login';
+
+  function _switchTab(m) {
+    _am = m;
+    var tl=document.getElementById('_tl'),tr=document.getElementById('_tr'),sb=document.getElementById('_sb');
+    if(tl){tl.className='atab'+(m==='login'?' on':'');}
+    if(tr){tr.className='atab'+(m==='register'?' on':'');}
+    if(sb){sb.textContent=m==='login'?'כניסה':'הרשמה';}
+    var er=document.getElementById('_er');if(er)er.style.display='none';
+  }
+  window._switchTab = _switchTab;
+
+  function _showErr(msg){var el=document.getElementById('_er');if(el){el.textContent=msg;el.style.display='block';}}
+
+  function _doAuth(){
+    var em=(document.getElementById('_em')||{}).value||'';
+    var pw=(document.getElementById('_pw')||{}).value||'';
+    var sb=document.getElementById('_sb');
+    em=em.trim();
+    if(!em||!pw){_showErr('נא למלא מייל וסיסמה');return;}
+    if(pw.length<6){_showErr('סיסמה חייבת להכיל לפחות 6 תווים');return;}
+    if(sb){sb.disabled=true;sb.textContent='מתחבר...';}
+    var act=_am==='login'
+      ?firebase.auth().signInWithEmailAndPassword(em,pw)
+      :firebase.auth().createUserWithEmailAndPassword(em,pw);
+    act.catch(function(e){
+      if(sb){sb.disabled=false;sb.textContent=_am==='login'?'כניסה':'הרשמה';}
+      var m={'auth/user-not-found':'משתמש לא נמצא','auth/wrong-password':'סיסמה שגויה',
+             'auth/email-already-in-use':'המייל כבר רשום — התחבר/י','auth/invalid-email':'מייל לא תקין',
+             'auth/weak-password':'סיסמה קצרה מדי','auth/invalid-credential':'מייל או סיסמה שגויים'};
+      _showErr(m[e.code]||e.message);
     });
   }
+  window._doAuth = _doAuth;
 
-  function removeAuthGate() {
-    var g = document.getElementById('auth-gate'); if(g) g.remove();
+  function _showGate(){
+    if(document.getElementById('_gate')) return;
+    _injectStyle('_acs', _AUTH_CSS);
+    var d=document.createElement('div');
+    d.id='_gate'; d.className='v';
+    d.style.cssText='display:flex;position:fixed;inset:0;background:linear-gradient(135deg,#0f1923,#1a2e3b);z-index:99999;align-items:center;justify-content:center;font-family:Heebo,-apple-system,sans-serif';
+    d.innerHTML='<div class="ac"><div class="alo">R</div><h1 class="ati">Re-Set Dashboard</h1><p class="asu">דשבורד ניהול פרויקטים</p><div class="atabs"><button id="_tl" class="atab on" onclick="_switchTab('login')">כניסה</button><button id="_tr" class="atab" onclick="_switchTab('register')">הרשמה</button></div><input class="ain" id="_em" type="email" placeholder="כתובת מייל" autocomplete="email"/><input class="ain" id="_pw" type="password" placeholder="סיסמה" autocomplete="current-password"/><div id="_er" class="aerr" style="display:none"></div><button class="abtn" id="_sb" onclick="_doAuth()">כניסה</button></div>';
+    document.body.appendChild(d);
+    document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.getElementById('_gate'))_doAuth();});
   }
 
-  function injectMobile() {
-    injectCSS('_mobile-css', MOBILE_CSS + HBG_CSS);
-    var pageHead = document.querySelector('.page-head');
-    if (pageHead && !document.querySelector('.hbg-btn')) {
-      var btn = document.createElement('button');
-      btn.className = 'hbg-btn';
-      btn.title = 'תפריט';
-      btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/></svg>';
-      btn.onclick = function(){
-        var app = document.querySelector('.app');
-        if(!app) return;
-        var open = app.classList.toggle('sb-open');
-        var ov = document.getElementById('_sb-overlay');
-        if(open && !ov){
-          ov = document.createElement('div');
-          ov.className = 'sb-overlay'; ov.id = '_sb-overlay';
-          ov.onclick = function(){ app.classList.remove('sb-open'); ov.remove(); };
-          document.body.appendChild(ov);
-        } else if(!open && ov){ ov.remove(); }
-      };
-      pageHead.insertBefore(btn, pageHead.firstChild);
-    }
+  function _removeGate(){var g=document.getElementById('_gate');if(g)g.remove();}
+
+  function _addHamburger(){
+    if(document.querySelector('.hbtn')) return;
+    var ph=document.querySelector('.page-head');
+    if(!ph) return;
+    var b=document.createElement('button');
+    b.className='hbtn'; b.title='תפריט';
+    b.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/></svg>';
+    b.onclick=function(){
+      var app=document.querySelector('.app'); if(!app) return;
+      var open=app.classList.toggle('sbo');
+      var ov=document.getElementById('_ov');
+      if(open&&!ov){ov=document.createElement('div');ov.className='sbo-ov';ov.id='_ov';ov.onclick=function(){app.classList.remove('sbo');ov.remove();};document.body.appendChild(ov);}
+      else if(!open&&ov){ov.remove();}
+    };
+    ph.insertBefore(b,ph.firstChild);
   }
 
-  function waitForApp(cb) {
-    var t = 0;
-    var iv = setInterval(function(){
-      t += 200;
-      if (document.querySelector('.app') || t > 10000) {
-        clearInterval(iv);
-        cb();
-      }
-    }, 200);
+  function _waitFor(sel, cb, max) {
+    var t=0, iv=setInterval(function(){
+      t+=200;
+      if(document.querySelector(sel)||t>=(max||8000)){clearInterval(iv);if(document.querySelector(sel))cb();}
+    },200);
   }
 
-  function switchTab(mode) {
-    _authMode = mode;
-    var tl=document.getElementById('tab-login'), tr=document.getElementById('tab-register'), sb=document.getElementById('auth-submit');
-    if(tl) tl.classList.toggle('active', mode==='login');
-    if(tr) tr.classList.toggle('active', mode==='register');
-    if(sb) sb.textContent = mode==='login'?'כניסה':'הרשמה';
-    var er=document.getElementById('auth-error'); if(er) er.style.display='none';
-  }
-
-  function showError(msg) {
-    var el=document.getElementById('auth-error'); if(el){el.textContent=msg;el.style.display='block';}
-  }
-
-  function handleAuth() {
-    var email=(document.getElementById('auth-email')||{}).value||'';
-    var pass=(document.getElementById('auth-password')||{}).value||'';
-    var btn=document.getElementById('auth-submit');
-    email=email.trim();
-    if(!email||!pass){showError('נא למלא מייל וסיסמה');return;}
-    if(pass.length<6){showError('הסיסמה חייבת להכיל לפחות 6 תווים');return;}
-    if(btn){btn.disabled=true;btn.textContent='מתחבר...';}
-    var action=_authMode==='login'
-      ?firebase.auth().signInWithEmailAndPassword(email,pass)
-      :firebase.auth().createUserWithEmailAndPassword(email,pass);
-    action.catch(function(err){
-      if(btn){btn.disabled=false;btn.textContent=_authMode==='login'?'כניסה':'הרשמה';}
-      var msgs={'auth/user-not-found':'משתמש לא נמצא','auth/wrong-password':'סיסמה שגויה','auth/email-already-in-use':'המייל כבר רשום — נסה/י להתחבר','auth/invalid-email':'מייל לא תקין','auth/weak-password':'סיסמה קצרה מדי','auth/invalid-credential':'מייל או סיסמה שגויים'};
-      showError(msgs[err.code]||err.message);
-    });
-  }
-
-  firebase.auth().onAuthStateChanged(function(user) {
-    if (user) {
-      removeAuthGate();
-      waitForApp(injectMobile);
+  firebase.auth().onAuthStateChanged(function(user){
+    if(user){
+      _removeGate();
+      _waitFor('.page-head', function(){
+        _injectStyle('_mob', _MOB_CSS);
+        _addHamburger();
+      });
     } else {
-      waitForApp(function(){
-        injectAuthGate();
+      _waitFor('body', function(){
+        _showGate();
       });
     }
   });
